@@ -13,7 +13,7 @@ pipeline {
     }
     parameters {
         string(name: 'JMeter_Path', defaultValue: 'D:\\PerformanceTesting\\apache-jmeter-5.6.3\\bin', description: 'JMeter bin directory', trim: true)
-        string(name: 'Script_Path', defaultValue: 'D:\\PerformanceTesting\\apache-jmeter-5.6.3\\bin\\CSVSample.jmx', description: 'JMeter script location', trim: true)
+        string(name: 'Script_Path', defaultValue: 'D:\\PerformanceTesting\\apache-jmeter-5.6.3\\bin\\examples\\CSVSample.jmx', description: 'JMeter script location', trim: true)
         string(name: 'Application_Name', defaultValue: 'Sample', description: 'Name of the application under test', trim: true)
         string(name: 'Result_Directory', defaultValue: 'D:\\PerformanceTesting\\Results', description: 'JMeter test log file location', trim: true)
         string(name: 'LG_IP_Address', defaultValue: '', description: 'Optional Load Generator IP Address', trim: true)
