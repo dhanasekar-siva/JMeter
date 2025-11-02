@@ -19,19 +19,22 @@ pipeline {
         string(name: 'LG_IP_Address', defaultValue: '', description: 'Optional Load Generator IP Address', trim: true)
     }
     stages {
-        stage('Setup JMeter PATH') {
+        stage('Initialize') {
             steps {
                 script {
+                    // Clean project workspace
+                    cleanWs()
+                    // Add the JMeter bin directory to the system path
                     env.PATH = isUnix() ? "${params.JMeter_Path}:${env.PATH}" : "${params.JMeter_Path};${env.PATH}"
+                    // Determine OS-specific command and path separator
+                    pathSeparator = isUnix() ? "/" : "\\"
+                    jmeterExecutable = isUnix() ? "jmeter" : "jmeter.bat"
                 }
             }
         }
         stage ('Input Parameter Validation') {
             steps {
                 script {
-                    // Determine OS-specific command and path separator
-                    pathSeparator = isUnix() ? "/" : "\\"
-                    jmeterExecutable = isUnix() ? "jmeter" : "jmeter.bat"
                     // Validate JMeter bin directory is valid or not
                     echo "Validating JMeter bin directory..."
                     if (!params.JMeter_Path) error "Parameter JMeter_Path is empty."
