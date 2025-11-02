@@ -1,0 +1,102 @@
+def pathSeparator
+def jmeterExecutable
+
+pipeline {
+    agent any
+    options {
+        // Add timestamps for better logging
+        timestamps()
+        buildDiscarder(logRotator(
+            numToKeepStr: '30',           // Or only keep last 30 builds
+            artifactNumToKeepStr: '15'    // Or only keep artifacts for last 15 builds
+        ))
+    }
+    parameters {
+        string(name: 'JMeter_Path', defaultValue: 'D:\\PerformanceTesting\\apache-jmeter-5.6.3\\bin', description: 'JMeter bin directory', trim: true)
+        string(name: 'Script_Path', defaultValue: 'D:\\PerformanceTesting\\apache-jmeter-5.6.3\\bin\\CSVSample.jmx', description: 'JMeter script location', trim: true)
+        string(name: 'Application_Name', defaultValue: 'Sample', description: 'Name of the application under test', trim: true)
+        string(name: 'Result_Directory', defaultValue: 'D:\\PerformanceTesting\\Results', description: 'JMeter test log file location', trim: true)
+        string(name: 'LG_IP_Address', defaultValue: '', description: 'Optional Load Generator IP Address', trim: true)
+    }
+    stages {
+        stage('Setup JMeter PATH') {
+            steps {
+                script {
+                    env.PATH = isUnix() ? "${params.JMeter_Path}:${env.PATH}" : "${params.JMeter_Path};${env.PATH}"
+                }
+            }
+        }
+        stage ('Input Parameter Validation') {
+            steps {
+                script {
+                    // Determine OS-specific command and path separator
+                    pathSeparator = isUnix() ? "/" : "\\"
+                    jmeterExecutable = isUnix() ? "jmeter" : "jmeter.bat"
+                    // Validate JMeter bin directory is valid or not
+                    echo "Validating JMeter bin directory..."
+                    if (!params.JMeter_Path) error "Parameter JMeter_Path is empty."
+                    if (!fileExists("${params.JMeter_Path}${pathSeparator}${jmeterExecutable}")) error "JMeter bin directory is invalid: ${params.JMeter_Path}"
+                    echo "JMeter bin directory is valid."
+                    // Validate JMeter script file
+                    echo "Validating JMeter script file existence..."
+                    if (!params.Script_Path) error "Parameter Script_Path is empty."
+                    if (!fileExists(params.Script_Path)) error "JMeter script file does not exist: ${params.Script_Path}"
+                    echo "JMeter script file exists."
+                    // Validate Application Name is not empty
+                    if (!params.Application_Name) error "Parameter Application_Name is empty."
+                }
+            }
+        }
+        stage('Execute Test') {
+            steps {
+                script {
+                    // Construct JMeter CLI command (quoted to handle spaces)
+                    def jtlFile = "${params.Result_Directory}${pathSeparator}${params.Application_Name}-Run_${env.BUILD_NUMBER}.jtl"
+                    def jmeterCliCmd = "${jmeterExecutable} -n -t \"${params.Script_Path}\" -l \"${jtlFile}\""
+
+                    if (params.LG_IP_Address) {
+                        jmeterCliCmd += " -R ${params.LG_IP_Address}"
+                    }
+
+                    // Execute JMeter safely
+                    try {
+                        if (isUnix()) {
+                            sh jmeterCliCmd
+                        } else {
+                            bat jmeterCliCmd
+                        }
+                    }
+                    catch (err) {
+                        error "JMeter test execution failed: ${err}"
+                    }
+                }
+            }
+        }
+        
+       stage('Archive Test Results') {
+            steps {
+                echo "Copying results to Jenkins workspace..."
+                script {
+                    if (isUnix()) {
+                        // Linux/Unix branch
+                        sh """
+                            set +x
+                            mkdir -p "$WORKSPACE/results"
+                            cp "${params.Result_Directory}/${params.Application_Name}-Run_${env.BUILD_NUMBER}.jtl" "$WORKSPACE/results/"
+                        """
+                    } else {
+                        // Windows branch (using bat)
+                        bat """
+                            @echo off
+                            if not exist "%WORKSPACE%\\results" mkdir "%WORKSPACE%\\results"
+                            copy /Y "%Result_Directory%\\%Application_Name%-Run_%BUILD_NUMBER%.jtl" "%WORKSPACE%\\results\\"
+                        """
+                    }
+                    echo "Completed copying results to Jenkins workspace."
+                }
+                archiveArtifacts artifacts: "results/${params.Application_Name}-Run_${env.BUILD_NUMBER}.jtl", fingerprint: true
+                echo "Completed archiving test results."
+            }
+        }
+    }
+}
