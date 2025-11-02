@@ -53,7 +53,7 @@ pipeline {
         stage('Execute Test') {
             steps {
                 script {
-                    // Construct JMeter CLI command (quoted to handle spaces)
+                    // Construct JMeter CLI command
                     def jtlFile = "${params.Result_Directory}${pathSeparator}${params.Application_Name}-Run_${env.BUILD_NUMBER}.jtl"
                     def jmeterCliCmd = "${jmeterExecutable} -n -t \"${params.Script_Path}\" -l \"${jtlFile}\""
 
@@ -81,14 +81,12 @@ pipeline {
                 echo "Copying results to Jenkins workspace..."
                 script {
                     if (isUnix()) {
-                        // Linux/Unix branch
                         sh """
                             set +x
                             mkdir -p "$WORKSPACE/results"
                             cp "${params.Result_Directory}/${params.Application_Name}-Run_${env.BUILD_NUMBER}.jtl" "$WORKSPACE/results/"
                         """
                     } else {
-                        // Windows branch (using bat)
                         bat """
                             @echo off
                             if not exist "%WORKSPACE%\\results" mkdir "%WORKSPACE%\\results"
