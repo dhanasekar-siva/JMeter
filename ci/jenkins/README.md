@@ -18,8 +18,8 @@ It supports both Windows and Linux/Unix agents and can be configured for local o
 | **Archive Test Results** | Copies `.jtl` results into the Jenkins workspace and archives them as build artifacts |
 
 ## Pipeline Parameters
-| Stage | Description |
-|-------|-------------|
+| Name | Description |
+|------|-------------|
 | **JMeter_Path** | Path to JMeter’s bin directory |
 | **Script_Path** | Full path to the JMeter test plan (.jmx file) |
 | **Application_Name** | Name of the application under test |
