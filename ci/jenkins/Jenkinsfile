@@ -32,7 +32,7 @@ pipeline {
                 }
             }
         }
-        stage ('Input Parameter Validation') {
+        stage ('Validate Input Parameters') {
             steps {
                 script {
                     // Validate JMeter bin directory is valid or not
